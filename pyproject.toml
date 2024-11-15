@@ -1,0 +1,12 @@
+[project]
+name = "sonification-zooniverse"
+version = "0.1.0"
+description = "Generates sonified data files for uploading to the Zooniverse"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "kaleido>=0.4.1",
+    "numpy>=1.26.4",
+    "plotly>=5.24.1",
+    "sonounolib>=0.5.3",
+]
