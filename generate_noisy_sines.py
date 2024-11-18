@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 from numpy import float32
 from sonounolib.tracks import Track
 from pathlib import Path
+from pydub import AudioSegment
 
 
 def generate_times(frequency: int, duration: int) -> NDArray[float32]:
@@ -56,7 +57,7 @@ def apply_noise_to_signal(
     return signal_modified
 
 
-def save_signal(filename: str|Path, time: NDArray[float32], signal: NDArray[float32]):
+def save_signal_to_csv(filename: str|Path, time: NDArray[float32], signal: NDArray[float32]):
     """
     Saves the signal data to a text file.
 
@@ -100,10 +101,33 @@ def plot_signals(
     fig.write_html(f'{filename}.html')
 
 
+def save_signal_to_mp3(
+        filename: str|Path, signal: NDArray[float32], frequency: int
+):
+    """
+    Saves a signal as an MP3 file, going via Track and Wav
+    """
+    filename: Path = Path(filename)
+    path_mp3: Path = filename.with_suffix(filename.suffix + '.mp4')
+    path_wav: Path = filename.with_suffix(filename.suffix + '.wav')
+
+    track: Track = Track(rate=FREQUENCY)
+    track.add_raw_data(signal)
+    track.to_wav(path_wav)
+
+    sound: AudioSegment = AudioSegment.from_wav(path_wav)
+    sound.export(path_mp3, format='mp4')
+    path_wav.unlink()
+
+
+PLACEHOLDER_PATH: Path = Path("placeholder.jpg")
+PLACEHOLDER_BYTES: bytes = PLACEHOLDER_PATH.read_bytes()
+
 OUTPUT_PATH: Path = Path('output/')
 
 RANDOM_SEED: int = 0  # Seed for reproducibility
-FREQUENCY: int = 44100  # Frequency, in Hz
+FREQUENCY: int = 22050  # Frequency, in Hz
+# FREQUENCY: int = 44100  # Frequency, in Hz
 DURATION: int = 12  # Duration, in seconds
 PERIOD: int = 6  # Period, in seconds
 
@@ -144,46 +168,93 @@ def main() -> None:
         filename=OUTPUT_PATH / 'signals-clipped',
         names=[f"σ={sigma}" for sigma in [0]+noise_levels],
     )
+    save_signal_to_mp3(
+        filename=OUTPUT_PATH / "sine_large",
+        signal=signal_large_clean,
+        frequency=FREQUENCY,
+    )
+    save_signal_to_csv(
+        filename=OUTPUT_PATH / "sine_large.csv",
+        time=time,
+        signal=signal_large_clean
+    )
 
-    track_clean: Track = Track()
-    track_clean.add_raw_data(signal_large_clean)
-    track_clean.to_wav(
-        OUTPUT_PATH / "sine_large_clean.wav"
+    Path(
+        OUTPUT_PATH / "sine_large.jpg"
+    ).write_bytes(
+        PLACEHOLDER_BYTES
     )
 
     for noise_level, signal in zip(noise_levels, signals_rescaled):
-        track: Track = Track()
-        track.add_raw_data(signal)
-        track.to_wav(
-            OUTPUT_PATH / f"sine_large_rescaled_{noise_level}.wav"
+        save_signal_to_mp3(
+            filename=OUTPUT_PATH / f"sine_large_rescaled_{noise_level}",
+            signal=signal, 
+            frequency=FREQUENCY,
         )
+        save_signal_to_csv(
+            filename=OUTPUT_PATH / f"sine_large_rescaled_{noise_level}.csv",
+            time=time,
+            signal=signal,
+        )
+        Path(
+            OUTPUT_PATH / f"sine_large_rescaled_{noise_level}.jpg"
+        ).write_bytes(
+            PLACEHOLDER_BYTES
+        )
+
 
     for noise_level, signal in zip(noise_levels, signals_clipped):
-        track: Track = Track()
-        track.add_raw_data(signal)
-        track.to_wav(
-            OUTPUT_PATH / f"sine_large_clipped_{noise_level}.wav"
+        save_signal_to_mp3(
+            filename=OUTPUT_PATH / f"sine_large_clipped_{noise_level}", 
+            signal=signal, 
+            frequency=FREQUENCY,
+        )
+        save_signal_to_csv(
+            filename=OUTPUT_PATH / f"sine_large_clipped_{noise_level}.csv",
+            time=time,
+            signal=signal,
+        )
+        Path(
+            OUTPUT_PATH / f"sine_large_clipped_{noise_level}.jpg"
+        ).write_bytes(
+            PLACEHOLDER_BYTES
         )
 
-    with open(OUTPUT_PATH / "manifest.csv", 'w', newline='') as manifest_file:
+
+    with open(OUTPUT_PATH / "manifest.csv", 'w', encoding="UTF-8") as manifest_file:
         manifest_writer: writer = writer(manifest_file)
         manifest_writer.writerow(
-            ("subject_id", "sound1", "description", "sigma", "rescaled_to", "clipped_to")
+            ("subject_id", "image_name_1", "image_name_2", "description", "sigma", "rescaled_to", "clipped_to")
         )
 
         idx: int = 0
         manifest_writer.writerow(
-            (0, f"sine_large.wav", "Noisy signal", 0, None, None)
+            (
+                0,
+                "sine_large.mp3", 
+                "sine_large.jpg", 
+                "Clean signal", 0, None, None
+            )
         )
 
         for idx, noise_level in enumerate(noise_levels, start=idx+1):
             manifest_writer.writerow(
-                (idx, f"sine_large_rescaled_{noise_level}.wav", "Noisy signal", noise_level, 1.0, None)
+                (
+                    idx,
+                    f"sine_large_rescaled_{noise_level}.mp3",
+                    f"sine_large_rescaled_{noise_level}.jpg",
+                    "Noisy signal", noise_level, 1.0, None
+                )
             )
 
         for idx, noise_level in enumerate(noise_levels, start=idx+1):
             manifest_writer.writerow(
-                (idx, f"sine_large_clipped_{noise_level}.wav", "Noisy signal", noise_level, None, 1.0)
+                (
+                    idx,
+                    f"sine_large_clipped_{noise_level}.mp3",
+                    f"sine_large_clipped_{noise_level}.jpg",
+                    "Noisy signal", noise_level, None, 1.0
+                )
             )
 
 
