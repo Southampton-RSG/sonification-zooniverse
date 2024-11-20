@@ -6,11 +6,12 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "kaleido>=0.4.1",
-    "moviepy>=1.0.3",
     "numpy>=1.26.4",
     "pillow>=11.0.0",
     "plotly>=5.24.1",
     "pydub>=0.25.1",
+    "python-ffmpeg>=2.0.12",
     "sonounolib>=0.5.3",
+    "tqdm>=4.67.0",
     "wxpython>=4.2.2",
 ]
